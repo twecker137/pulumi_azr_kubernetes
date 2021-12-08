@@ -1,0 +1,3 @@
+name: azure-kubernetes
+runtime: python
+description: A project for testing AKS deployments within Azure
