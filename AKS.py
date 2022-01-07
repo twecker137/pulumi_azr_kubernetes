@@ -1,8 +1,9 @@
 import pulumi
 import pulumi_azure_native as azure_native
-import pulumi_azuread as azuread
 
 from pulumi import ResourceOptions
+
+import Tools
 
 
 class AKSClusterArgs:
@@ -26,14 +27,21 @@ class AKSCluster(pulumi.ComponentResource):
 
         child_opts = ResourceOptions(parent=opts)
 
-        self.ad_app = azuread.Application(name, display_name=name)
-        self.ad_sp = azuread.ServicePrincipal(name, application_id=self.ad_app.application_id)
-        self.ad_sp_password = azuread.ServicePrincipalPassword(name, service_principal_id=self.ad_sp.id)
+        self.cluster_identity = azure_native.managedidentity.UserAssignedIdentity(
+            name,
+            location=args.location,
+            resource_group_name=args.resource_group_name,
+            opts=ResourceOptions(parent=self)
+        )
 
         self.managed_cluster = azure_native.containerservice.ManagedCluster(
             name,
             location=args.location,
             resource_group_name=args.resource_group_name,
+            identity=azure_native.containerservice.ManagedClusterIdentityArgs(
+                type="UserAssigned",
+                user_assigned_identities=self.cluster_identity.id.apply(Tools.id_to_dict)
+            ),
             agent_pool_profiles=args.agent_pool_profiles,
             auto_scaler_profile=args.auto_scaler_profile,
             disk_encryption_set_id=None,  # TODO: Add disk encryption set
@@ -65,9 +73,13 @@ class AKSCluster(pulumi.ComponentResource):
                 name="Basic",
                 tier="Free"
             ),
-            service_principal_profile={
-                "client_id": self.ad_app.application_id,
-                "secret": self.ad_sp_password.value
+            addon_profiles={
+                "azurepolicy": azure_native.containerservice.ManagedClusterAddonProfileArgs(
+                    enabled=True,
+                ),
+                "extensionManager": azure_native.containerservice.ManagedClusterAddonProfileArgs(
+                    enabled=True,
+                ),
             },
             # TODO: Add windows profile if needed
             opts=ResourceOptions(parent=self)
