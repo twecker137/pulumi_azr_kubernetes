@@ -76,6 +76,36 @@ def pulumi_program():
     )
     pulumi.export("kubeconfig", kubeconfig)
 
+    flux_configuration = azure_native.kubernetesconfiguration.FluxConfiguration(
+        "fluxConfiguration",
+        cluster_name=cluster.managed_cluster.name,
+        cluster_resource_name="managedClusters",
+        cluster_rp="Microsoft.ContainerService",
+        resource_group_name=rg_aks.name,
+        flux_configuration_name="towe-argo",
+        git_repository=azure_native.kubernetesconfiguration.GitRepositoryDefinitionArgs(
+            repository_ref=azure_native.kubernetesconfiguration.RepositoryRefDefinitionArgs(
+                branch="main",
+            ),
+            sync_interval_in_seconds=30,
+            timeout_in_seconds=600,
+            url="https://github.com/twecker137/argocd-demo",
+        ),
+        kustomizations={
+            "manifests": azure_native.kubernetesconfiguration.KustomizationDefinitionArgs(
+                depends_on=[],
+                path="./infra/argo/manifests/",
+                sync_interval_in_seconds=30,
+                timeout_in_seconds=600,
+                validation="none",
+            )
+        },
+        namespace="towe",
+        scope="cluster",
+        source_kind="GitRepository",
+        suspend=False)
+
+
 # To destroy our program, we can run python main.py destroy
 destroy = False
 # To preview our program, we can run python main.py preview
