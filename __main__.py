@@ -82,25 +82,25 @@ def pulumi_program():
         cluster_resource_name="managedClusters",
         cluster_rp="Microsoft.ContainerService",
         resource_group_name=rg_aks.name,
-        flux_configuration_name="towe-argo",
+        flux_configuration_name="flux-demo",
         git_repository=azure_native.kubernetesconfiguration.GitRepositoryDefinitionArgs(
             repository_ref=azure_native.kubernetesconfiguration.RepositoryRefDefinitionArgs(
                 branch="main",
             ),
             sync_interval_in_seconds=30,
             timeout_in_seconds=600,
-            url="https://github.com/twecker137/argocd-demo",
+            url="https://github.com/TobiMichael96/flux_demo",
         ),
         kustomizations={
             "manifests": azure_native.kubernetesconfiguration.KustomizationDefinitionArgs(
                 depends_on=[],
-                path="./infra/argo/manifests/",
+                path="./nginx/",
                 sync_interval_in_seconds=30,
                 timeout_in_seconds=600,
                 validation="none",
             )
         },
-        namespace="towe",
+        #namespace="towe",
         scope="cluster",
         source_kind="GitRepository",
         suspend=False)
